@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="titanic">#04153E</color>
+    <color name="rocky">#3D75E4</color>
+    <color name="arrival">#E4EDFB</color>
+    <color name="shawshank">#F6FCF3</color>
+    <color name="rush">#F6F9FE</color>
+    <color name="pianist">#A2ABBE</color>
+    <color name="warior">#FEFAF6</color>
+    <color name="fargo">#E14761</color>
+    <color name="amelie">#FFFFFF</color>
+    <color name="drive">#8DC95E</color>
+    <color name="joker">#FEF8F9</color>
+    <color name="alien">#81ABEE</color>
+    <color name="indiana">#F196A5</color>
+    <color name="inception">#CDD3DF</color>
+    <color name="memento">#C0D6F6</color>
+    <color name="interstellar">#113079</color>
+    <color name="godfather">#214EB0</color>
+    <color name="matrix">#57A003</color>
+    <color name="snatch">#E9A35D</color>
+    <color name="prestige">#34040F</color>
+    <color name="lebowski">#D06E0B</color>
+    <color name="oldboy">#142202</color>
+    <color name="gentlemen">#9954F2</color>
+    <color name="trainspotting">#F5F8FC</color>
+    <color name="metropolis">#6F7A90</color>
+    <color name="bladerunner">#111827</color>
+</resources>
