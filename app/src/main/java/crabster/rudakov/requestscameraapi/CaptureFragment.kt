@@ -1,32 +1,44 @@
 package crabster.rudakov.requestscameraapi
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Intent
-import android.database.Cursor
-import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
-import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import androidx.loader.content.CursorLoader
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import crabster.rudakov.requestscameraapi.databinding.FragmentCaptureBinding
-import java.text.SimpleDateFormat
-import java.util.*
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 
+@AndroidEntryPoint
 class CaptureFragment : Fragment() {
-
-    companion object {
-        private const val REQUEST_IMAGE_CAPTURE = 1888
-        private const val REQUEST_VIDEO_CAPTURE = 1999
-    }
 
     private var _binding: FragmentCaptureBinding? = null
     private val binding get() = _binding!!
+
+    private val viewModel: CaptureViewModel by viewModels()
+    private var mediaFilePath: String? = null
+    private var mediaFileUri: Uri? = null
+    private var job: Job? = null
+
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts
+            .StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            Log.d("URI FROM INTENT", "${result.data!!.data}")
+            Log.d("URI FROM FRAGMENT", "$mediaFileUri")
+            binding.uriTextView.text = mediaFileUri.toString()
+            binding.pathTextView.text = mediaFilePath
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -40,71 +52,34 @@ class CaptureFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.fabCapturePhoto.setOnClickListener {
-            startActivityForResult(
-                Intent(MediaStore.ACTION_IMAGE_CAPTURE),
-                REQUEST_IMAGE_CAPTURE
-            )
-        }
-
-        binding.fabCaptureVideo.setOnClickListener {
-            startActivityForResult(
-                Intent(MediaStore.ACTION_VIDEO_CAPTURE),
-                REQUEST_VIDEO_CAPTURE
-            )
-        }
+        binding.fabCapturePhoto.setOnClickListener { takeImage() }
+        binding.fabCaptureVideo.setOnClickListener { takeVideo() }
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == REQUEST_IMAGE_CAPTURE) {
-                val photo = data?.extras?.get("data") as Bitmap
-                val savedImageUri: Uri? = saveImageInStorage(photo)
-                displayMetaData(savedImageUri, MediaStore.Images.Media.DATA)
-            } else if (requestCode == REQUEST_VIDEO_CAPTURE) {
-                val savedVideoUri: Uri? = data?.data
-                displayMetaData(savedVideoUri, MediaStore.Video.Media.DATA)
+    override fun onDestroy() {
+        super.onDestroy()
+        job = null
+        _binding = null
+    }
+
+    private fun takeImage() {
+        if (job?.isActive == true) return
+        job = lifecycleScope.launch {
+            mediaFilePath = viewModel.createPictureTempFile {
+                cameraLauncher.launch(it)
             }
+            mediaFileUri = viewModel.mediaFileUri
         }
     }
 
-    private fun saveImageInStorage(image: Bitmap): Uri? {
-        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val path = MediaStore.Images.Media.insertImage(
-            context?.contentResolver,
-            image,
-            "IMG_${timeStamp}",
-            null
-        )
-        return Uri.parse(path)
-    }
-
-    private fun getRealPathFromURI(mediaStoreData: String, contentUri: Uri?): String? {
-        val projection = arrayOf(mediaStoreData)
-        val cursorLoader = CursorLoader(
-            requireActivity(),
-            contentUri!!,
-            projection,
-            null,
-            null,
-            null
-        )
-        val cursor: Cursor? = cursorLoader.loadInBackground()
-        return cursor.use { cursor1 ->
-            val columnIndex = cursor1?.getColumnIndexOrThrow(mediaStoreData)
-            cursor1?.moveToFirst()
-            columnIndex?.let { cursor1.getString(it) }
+    private fun takeVideo() {
+        if (job?.isActive == true) return
+        job = lifecycleScope.launch {
+            mediaFilePath = viewModel.createVideoTempFile {
+                cameraLauncher.launch(it)
+            }
+            mediaFileUri = viewModel.mediaFileUri
         }
-    }
-
-    @SuppressLint("SetTextI18n")
-    @Suppress("SameParameterValue")
-    private fun displayMetaData(uri: Uri?, mediaStoreData: String) {
-        val realPath: String? = getRealPathFromURI(mediaStoreData, uri)
-        binding.uriTextView.text = "URI:\n${uri.toString()}"
-        binding.pathTextView.text = "PATH:\n$realPath"
     }
 
 }
